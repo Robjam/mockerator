@@ -76,7 +76,7 @@ export function scaffoldProject(options?: Options) {
       parameters: [{
         name: 'overrides',
         hasQuestionToken: true,
-        type: name
+        type: `Partial<${name}>`,
       }],
       returnType: name,
     }).setBodyText(writer => {
