@@ -14,7 +14,7 @@ describe('primitive types', () => {
   it('should not generate anything for empty types', async () => {
     type ExpectedEmpty = {};
 
-    const { project, createFactoryFunction } = scaffoldProject();
+    const { project, createFactoryFunction } = scaffoldProject({ inputDir: __filename });
     const typeContents = await readFile(join(__dirname, 'primitives/ExpectedEmpty.input.ts'))
 
     const inputFile = project.createSourceFile("__test/primitive/ExpectedEmpty", typeContents.toString());
@@ -24,11 +24,11 @@ describe('primitive types', () => {
   })
 
   it('should generate some primitive values for a simple type', async () => {
-    const { project, createFactoryFunction } = scaffoldProject();
+    const { project, createFactoryFunction } = scaffoldProject({ inputDir: __filename });
     const typeContents = await readFile(join(__dirname, 'primitives/SimplePrimitive.input.ts'))
     // HACK: Because scaffoldProject uses the `inMemoryFileSystem`, the objects must be created/added individually.
     // TODO: There probably is a better way to do this, but for now it works.
-    const inputFile = project.createSourceFile('primities/SimplePrimitive.input.ts', typeContents.toString());
+    const inputFile = project.createSourceFile('SimplePrimitive.input.ts', typeContents.toString());
 
     const resultFile = await createFactoryFunction(inputFile);
     if (!resultFile) {
