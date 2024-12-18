@@ -1,27 +1,37 @@
-import { ForInStatement, IndentationText, Node, Project, QuoteKind, SourceFile, ts, TypeLiteralNode, type PropertySignatureStructure, } from 'ts-morph'
-import { allLocales } from '@faker-js/faker'
+import { IndentationText, Node, Project, QuoteKind, SourceFile, ts, TypeLiteralNode, type PropertySignatureStructure, } from 'ts-morph'
+import { allLocales } from '@faker-js/faker';
+import { join } from 'node:path';
 
 export type Options = {
-  locale: keyof typeof allLocales,
+  locale?: keyof typeof allLocales,
+  inputDir?: string,
+  outDir?: string
 }
 
 // TODO: make this more composable with extra options like locale, etc
 export function scaffoldProject(options?: Options) {
-  const configuration: Options = {
+  const configuration: Required<Options> = {
     locale: 'en',
+    outDir: '',
+    inputDir: '.',
     ...options,
   }
   // TODO: find which settings will need to be exposed
   const project = new Project({
-    useInMemoryFileSystem: true,
+    useInMemoryFileSystem: configuration.inputDir === '.' ? true : false,
     compilerOptions: {
       target: ts.ScriptTarget.ES2023,
+      rootDir: configuration.inputDir,
     },
     manipulationSettings: {
       indentationText: IndentationText.TwoSpaces,
       quoteKind: QuoteKind.Single,
-    }
+    },
   });
+
+  if (configuration.inputDir !== '.') {
+    project.addSourceFilesAtPaths(configuration.inputDir);
+  }
 
   async function createFactoryFunction(inputFile: SourceFile): Promise<SourceFile | null> {
     const aliases = inputFile.getTypeAliases();
@@ -29,18 +39,18 @@ export function scaffoldProject(options?: Options) {
       return null
     }
     const firstAlias = aliases[0];
-    const dumdum = firstAlias?.getTypeNode()
-    if (!Node.isTypeLiteral(dumdum)) {
+    const typeNode = firstAlias?.getTypeNode()
+    if (!Node.isTypeLiteral(typeNode)) {
       return null;
     }
-    const name = firstAlias?.getName();
+    const name = firstAlias!.getName();
 
-    const methods = dumdum.getMembers();
+    const methods = typeNode.getMembers();
     if (!methods.length) {
       return null;
     }
 
-    const resultFactoryFunctionFile = project.createSourceFile(`results/create${name}.ts`);
+    const resultFactoryFunctionFile = project.createSourceFile(join(configuration.outDir, `create${name}.ts`));
     resultFactoryFunctionFile.addImportDeclaration({
       namedImports: [{
         name: `faker${configuration?.locale.toUpperCase()}`,
@@ -48,6 +58,18 @@ export function scaffoldProject(options?: Options) {
       }],
       moduleSpecifier: '@faker-js/faker'
     });
+
+    resultFactoryFunctionFile.addImportDeclaration({
+      namedImports: [{
+        name,
+      }],
+      isTypeOnly: true,
+      moduleSpecifier: resultFactoryFunctionFile.getRelativePathTo(inputFile)
+        // HACK: this is probably an issue with the test setup
+        .replace(/\.ts$/, '')
+        .replace(/^(?!\.|\.\.|\/)/, './'),
+    })
+
     resultFactoryFunctionFile.addFunction({
       name: `create${name}`,
       isExported: true,

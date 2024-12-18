@@ -1,4 +1,4 @@
-type SimplePrimitive = {
+export type SimplePrimitive = {
   id: number,
   name: string,
 };
