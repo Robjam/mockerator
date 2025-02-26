@@ -12,17 +12,24 @@ describe('primitive types', () => {
     and commenting out test cases you want to skip.
   */
   it('should not generate anything for empty types', async () => {
-    const { project, createFactoryFunction } = scaffoldProject({ inputDir: __filename });
+    const { project, createFactoryFunction } = scaffoldProject({ 
+      inputDir: __filename,
+      isDryRun: true,
+    });
     const typeContents = await readFile(join(__dirname, 'primitives/ExpectedEmpty.input.ts'))
 
     const inputFile = project.createSourceFile("__test/primitive/ExpectedEmpty", typeContents.toString());
 
     const resultFile = await createFactoryFunction(inputFile);
+    await resultFile?.save()
     expect(resultFile).toBeNull()
   })
 
   it('should generate some primitive values for a simple type', async () => {
-    const { project, createFactoryFunction } = scaffoldProject({ inputDir: __filename });
+    const { project, createFactoryFunction } = scaffoldProject({ 
+      inputDir: __filename,
+      isDryRun: true,
+    });
     const typeContents = await readFile(join(__dirname, 'primitives/SimplePrimitive.input.ts'))
     // HACK: Because scaffoldProject uses the `inMemoryFileSystem`, the objects must be created/added individually.
     // TODO: There probably is a better way to do this, but for now it works.
