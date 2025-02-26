@@ -1,5 +1,5 @@
 import { fakerEN as faker } from '@faker-js/faker';
-import type { SimplePrimitive } from './SimplePrimitive.input';
+import type { SimplePrimitive } from './simplePrimitive.input';
 
 export function createSimplePrimitive(overrides?: Partial<SimplePrimitive>): SimplePrimitive {
   return {
