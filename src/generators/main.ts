@@ -1,4 +1,4 @@
-import { IndentationText, Node, Project, QuoteKind, SourceFile, ts, TypeLiteralNode, type PropertySignatureStructure, } from 'ts-morph'
+import { IndentationText, Node, Project, QuoteKind, SourceFile, ts, TypeLiteralNode, TypeNode, type PropertySignatureStructure, } from 'ts-morph'
 import { allLocales } from '@faker-js/faker';
 import { join } from 'node:path';
 
@@ -6,6 +6,7 @@ export type Options = {
   locale?: keyof typeof allLocales,
   inputDir?: string,
   outDir?: string
+  isDryRun?: boolean
 }
 
 // TODO: make this more composable with extra options like locale, etc
@@ -14,11 +15,12 @@ export function scaffoldProject(options?: Options) {
     locale: 'en',
     outDir: '',
     inputDir: '.',
+    isDryRun: false,
     ...options,
   }
   // TODO: find which settings will need to be exposed
   const project = new Project({
-    useInMemoryFileSystem: configuration.inputDir === '.' ? true : false,
+    useInMemoryFileSystem: configuration.isDryRun ? true : false,
     compilerOptions: {
       target: ts.ScriptTarget.ES2023,
       rootDir: configuration.inputDir,
@@ -45,8 +47,8 @@ export function scaffoldProject(options?: Options) {
     }
     const name = firstAlias!.getName();
 
-    const methods = typeNode.getMembers();
-    if (!methods.length) {
+    const members = typeNode.getMembers();
+    if (!members.length) {
       return null;
     }
 
@@ -56,7 +58,7 @@ export function scaffoldProject(options?: Options) {
         name: `faker${configuration?.locale.toUpperCase()}`,
         alias: 'faker'
       }],
-      moduleSpecifier: '@faker-js/faker'
+      moduleSpecifier: '@faker-js/faker',
     });
 
     resultFactoryFunctionFile.addImportDeclaration({
@@ -82,12 +84,12 @@ export function scaffoldProject(options?: Options) {
     }).setBodyText(writer => {
       return writer.write('return')
         .block(() => {
-          methods.forEach((m) => {
+          members.forEach((m) => {
             if (!Node.isPropertySignature(m)) {
               return
             }
-            const stuff = m.getStructure();
-            writer.writeLine(`${stuff.name}: ${fakerGeneratorByType(stuff)},`)
+            const structure = m.getStructure();
+            writer.writeLine(`${structure.name}: ${fakerGeneratorBySignature(structure)},`)
           })
           writer.writeLine('...overrides,')
         })
@@ -102,7 +104,7 @@ export function scaffoldProject(options?: Options) {
 }
 
 // TODO: consider moving this when it gets to big
-export function fakerGeneratorByType(property: PropertySignatureStructure) {
+export function fakerGeneratorBySignature(property: PropertySignatureStructure): string {
   // TODO: add overrides for common types like email, phoneNumber, etc.
   // TODO: add user-defined overrides as well
   switch (property.type) {
@@ -110,8 +112,13 @@ export function fakerGeneratorByType(property: PropertySignatureStructure) {
       return 'faker.number.int()'
     case 'string':
       return 'faker.lorem.word()'
+    case 'boolean':
+      return 'faker.datatype.boolean()'
+    case 'Date':
+      return 'faker.date.recent()'
     default:
-      // TODO: logging
-      `undefined as unknown as ${property.type}`
+      // TODO: add more support for complex types
+      // TODO: add some console output ease-of-reporting
+      return `undefined as unknown as ${property.type}`
   }
 }
