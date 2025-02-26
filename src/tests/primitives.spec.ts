@@ -12,8 +12,6 @@ describe('primitive types', () => {
     and commenting out test cases you want to skip.
   */
   it('should not generate anything for empty types', async () => {
-    type ExpectedEmpty = {};
-
     const { project, createFactoryFunction } = scaffoldProject({ inputDir: __filename });
     const typeContents = await readFile(join(__dirname, 'primitives/ExpectedEmpty.input.ts'))
 
@@ -38,6 +36,6 @@ describe('primitive types', () => {
     const memoryFs = project.getFileSystem();
 
     const result = await memoryFs.readFile(resultFile.getFilePath())
-    await expect(result).toMatchFileSnapshot('primitives/SimplePrimitive.snapshot.ts')
+    await expect(result).toMatchFileSnapshot(join(__dirname, 'primitives/SimplePrimitive.snapshot.ts'))
   })
 })

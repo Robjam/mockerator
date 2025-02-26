@@ -50,13 +50,13 @@ export function scaffoldProject(options?: Options) {
       return null;
     }
 
-    const resultFactoryFunctionFile = project.createSourceFile(join(configuration.outDir, `create${name}.ts`));
+    const resultFactoryFunctionFile = project.createSourceFile(join(configuration.outDir, `create${name}.ts`), undefined, { overwrite: true });
     resultFactoryFunctionFile.addImportDeclaration({
       namedImports: [{
         name: `faker${configuration?.locale.toUpperCase()}`,
         alias: 'faker'
       }],
-      moduleSpecifier: '@faker-js/faker'
+      moduleSpecifier: '@faker-js/faker',
     });
 
     resultFactoryFunctionFile.addImportDeclaration({
@@ -110,6 +110,10 @@ export function fakerGeneratorByType(property: PropertySignatureStructure) {
       return 'faker.number.int()'
     case 'string':
       return 'faker.lorem.word()'
+    case 'boolean':
+      return 'faker.datatype.boolean()'
+    case 'Date':
+      return 'faker.date.recent()'
     default:
       // TODO: logging
       `undefined as unknown as ${property.type}`
